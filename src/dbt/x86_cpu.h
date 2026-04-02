@@ -29,6 +29,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/* Compiler portability for alignment attributes */
+#if defined(_MSC_VER)
+#define FLINUX_ALIGNED(n) __declspec(align(n))
+#else
+#define FLINUX_ALIGNED(n) __attribute__((aligned(n)))
+#endif
+
 /* x86 general-purpose register indices */
 #define X86_REG_EAX  0
 #define X86_REG_ECX  1
@@ -104,7 +111,7 @@ enum x86_exit_reason
  * Full x86 virtual CPU state.
  * This is the "virtual processor" that the DBT operates on.
  */
-struct x86_cpu
+typedef struct x86_cpu
 {
 	/* General-purpose registers, indexed by X86_REG_* */
 	uint32_t regs[X86_REG_COUNT];
@@ -123,7 +130,7 @@ struct x86_cpu
 	uint32_t seg_base[X86_SEG_COUNT];
 
 	/* FPU / SSE state */
-	struct x86_fpu_state fpu __attribute__((aligned(16)));
+	FLINUX_ALIGNED(16) struct x86_fpu_state fpu;
 
 	/* Exit reason after last execution quantum */
 	enum x86_exit_reason exit_reason;
@@ -142,7 +149,7 @@ struct x86_cpu
 
 	/* CPU is halted */
 	bool halted;
-};
+} x86_cpu;
 
 /* Initialize a virtual CPU with default x86 state */
 void x86_cpu_init(struct x86_cpu *cpu, uint8_t *guest_base, uint64_t guest_size);
