@@ -33,6 +33,11 @@
 #include <str.h>
 #include <version.h>
 #include <win7compat.h>
+#include <uwp_compat.h>
+
+#ifdef _WIN64
+#include <dbt/dbt.h>
+#endif
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -107,7 +112,12 @@ static void init_subsystems()
 	signal_init();
 	process_init();
 	tls_init();
-	vfs_init(L"\\\\?\\C:\\Logs\\archlinux");
+
+	/* Use UWP-safe rootfs path instead of hardcoded path */
+	WCHAR rootfs_path[512];
+	uwp_get_rootfs_path(rootfs_path, 512);
+	vfs_init(rootfs_path);
+
 	dbt_init();
 }
 
@@ -120,14 +130,15 @@ static void init_subsystems()
 void main()
 {
 	log_init();
+	uwp_compat_init();
 	fork_init();
 	/* fork_init() will directly jump to restored thread context if we are a fork child */
 
 	mm_init();
 	flags_init();
 
-	/* Parse command line */
-	const char *cmdline = GetCommandLineA();
+	/* Parse command line (use UWP-safe getter) */
+	const char *cmdline = uwp_get_command_line();
 	int len = strlen(cmdline);
 	if (len > BLOCK_SIZE) /* TODO: Test if there is sufficient space for argv[] array */
 	{

@@ -21,7 +21,6 @@
 #include <common/auxvec.h>
 #include <common/errno.h>
 #include <common/fcntl.h>
-//#include <dbt/x86.h>
 #include <fs/winfs.h>
 #include <syscall/exec.h>
 #include <syscall/mm.h>
@@ -33,14 +32,33 @@
 #include <log.h>
 #include <heap.h>
 
+#ifdef _WIN64
+#include <dbt/dbt.h>
+#include <dbt/guest_memory.h>
+#endif
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <malloc.h>
 #include <ntdll.h>
 
+/*
+ * ELF format selection:
+ * On x64 host, we support BOTH x64 native AND x86 guest binaries.
+ * When loading x86 binaries on x64, we use Elf32 structures and
+ * route execution through the DBT (dynamic binary translator).
+ *
+ * The g_loading_x86_guest flag is set when we detect an EM_386 binary
+ * on an x64 host, switching to 32-bit ELF structures for loading.
+ */
 #ifdef _WIN64
-#define Elf_Ehdr Elf64_Ehdr
-#define Elf_Phdr Elf64_Phdr
+static int g_loading_x86_guest = 0;
+/* When loading x86 guest, use 32-bit ELF structures */
+#define Elf_Ehdr_Native Elf64_Ehdr
+#define Elf_Phdr_Native Elf64_Phdr
+/* For cross-arch loading we always use 32-bit structures */
+#define Elf_Ehdr Elf32_Ehdr
+#define Elf_Phdr Elf32_Phdr
 #else
 #define Elf_Ehdr Elf32_Ehdr
 #define Elf_Phdr Elf32_Phdr
@@ -137,7 +155,22 @@ static void run(struct binfmt *binary, int argc, char *argv[], int env_size, cha
 	 * When doing an execve we are overwritting the upper part of the stack while relying on the bottom part!!!
 	 * To get proper behaviour, we first have to save and restore esp on kernel/app switches, which is left to be done
 	 */
-	//dbt_run(entrypoint, (size_t)stack_base, (size_t)stack);
+#ifdef _WIN64
+	if (g_loading_x86_guest)
+	{
+		/* Cross-architecture mode: run x86 binary through DBT */
+		log_info("Launching x86 guest via DBT: entrypoint=%08x stack=%08x",
+			(uint32_t)entrypoint, (uint32_t)(size_t)stack);
+		dbt_run((uint32_t)entrypoint, (uint32_t)(size_t)stack_base, (uint32_t)(size_t)stack);
+	}
+	else
+	{
+		/* Native x64 binary */
+		goto_entrypoint(stack, (void*)entrypoint);
+	}
+#else
+	goto_entrypoint(stack, (void*)entrypoint);
+#endif
 }
 
 static int load_elf(struct file *f, struct binfmt *binary)
@@ -152,16 +185,24 @@ static int load_elf(struct file *f, struct binfmt *binary)
 	}
 
 #ifdef _WIN64
-	if (elf->eh.e_machine != EM_X86_64)
+	if (elf->eh.e_machine == EM_386)
 	{
-		log_error("Not an x86_64 executable.");
+		/* x86 (32-bit) binary on x64 host — use DBT for cross-arch execution */
+		log_info("Detected x86 (EM_386) binary on x64 host, enabling DBT mode.");
+		g_loading_x86_guest = 1;
+	}
+	else if (elf->eh.e_machine != EM_X86_64)
+	{
+		log_error("Not an x86_64 or i386 executable (e_machine=%d).", elf->eh.e_machine);
+		return -L_EACCES;
+	}
 #else
 	if (elf->eh.e_machine != EM_386)
 	{
 		log_error("Not an i386 executable.");
-#endif
 		return -L_EACCES;
 	}
+#endif
 
 	/* Load program header table */
 	size_t phsize = (size_t)elf->eh.e_phentsize * (size_t)elf->eh.e_phnum;
@@ -405,7 +446,9 @@ static void execve_initialize_routine()
 	vfs_reset();
 	mm_reset();
 	tls_reset();
-	//dbt_reset();
+#ifdef _WIN64
+	dbt_reset();
+#endif
 }
 
 static char *flip_startup_base()

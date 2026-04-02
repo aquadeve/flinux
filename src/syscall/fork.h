@@ -22,6 +22,13 @@
 #include "platform/arm/context.h"
 #elif defined(_M_IX86)
 #include "platform/x86/context.h"
+#elif defined(_M_X64)
+/*
+ * On x64 host, we include the x86 guest context structure for
+ * cross-architecture binary translation. The syscall_context
+ * structure uses 32-bit registers to match the x86 guest state.
+ */
+#include "platform/x64_host_x86_guest/context.h"
 #endif
 
 extern void fork_init();

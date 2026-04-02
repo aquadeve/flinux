@@ -26,3 +26,12 @@
 #define Xip Eip
 #define XWORD DWORD
 #endif
+
+/*
+ * FLINUX_DBT_X86_ON_X64: Defined when building the x64 host binary
+ * that can run x86 (32-bit) Linux guest binaries via DBT.
+ * This enables the cross-architecture ELF loader and interpreter.
+ */
+#if defined(_WIN64) && !defined(FLINUX_NATIVE_X64_ONLY)
+#define FLINUX_DBT_X86_ON_X64 1
+#endif
