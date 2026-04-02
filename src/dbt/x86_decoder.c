@@ -25,6 +25,7 @@
  */
 
 #include <dbt/x86_decoder.h>
+#include <dbt/x86_cpu.h>
 #include <string.h>
 
 /* Helper to read bytes from the instruction stream */

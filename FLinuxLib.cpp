@@ -20,6 +20,7 @@ static FLinux_ReadCallback g_read_callback = nullptr;
 extern "C" {
 	extern void main(void);
 	extern int uwp_compat_init(void);
+	extern void uwp_set_rootfs_path(const wchar_t *path);
 
 #ifdef _WIN64
 	extern int dbt_init(void);
@@ -38,10 +39,7 @@ int FLinux_Init(const wchar_t *rootfs_path)
 	 */
 	if (rootfs_path)
 	{
-		wchar_t buf[512];
-		wcsncpy_s(buf, sizeof(buf) / sizeof(buf[0]), rootfs_path, _TRUNCATE);
 		/* Store for later use by vfs_init via uwp_get_rootfs_path */
-		extern "C" void uwp_set_rootfs_path(const wchar_t *path);
 		uwp_set_rootfs_path(rootfs_path);
 	}
 
