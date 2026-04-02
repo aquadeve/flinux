@@ -37,11 +37,10 @@ static uint64_t g_guest_size = 0;
 
 /*
  * Preferred base address for the guest address space.
- * We try to place it at a high address to avoid conflicts with
- * the host's own allocations. If this fails, VirtualAlloc will
- * choose a location.
+ * Place at a high address (1TB mark) to avoid conflicts with
+ * the host's own allocations.
  */
-#define GUEST_PREFERRED_BASE ((void *)0x0000100000000000ULL)
+#define GUEST_PREFERRED_BASE ((void *)0x0000010000000000ULL)
 
 int guest_mem_init(uint64_t requested_size)
 {

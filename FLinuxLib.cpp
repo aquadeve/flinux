@@ -30,13 +30,21 @@ extern "C" {
 
 int FLinux_Init(const wchar_t *rootfs_path)
 {
-	/* Store the rootfs path for later use by uwp_compat */
+	uwp_compat_init();
+
+	/*
+	 * If a custom rootfs path is provided, override the UWP-detected one.
+	 * The UWP host app can specify the rootfs location explicitly.
+	 */
 	if (rootfs_path)
 	{
-		/* TODO: Pass rootfs_path to uwp_compat layer */
+		wchar_t buf[512];
+		wcsncpy_s(buf, sizeof(buf) / sizeof(buf[0]), rootfs_path, _TRUNCATE);
+		/* Store for later use by vfs_init via uwp_get_rootfs_path */
+		extern "C" void uwp_set_rootfs_path(const wchar_t *path);
+		uwp_set_rootfs_path(rootfs_path);
 	}
 
-	uwp_compat_init();
 	return 0;
 }
 

@@ -97,6 +97,7 @@ enum x86_exit_reason
 	X86_EXIT_BREAKPOINT,    /* INT3 breakpoint */
 	X86_EXIT_UNHANDLED,     /* Unhandled instruction */
 	X86_EXIT_SINGLE_STEP,   /* Single-step trap */
+	X86_EXIT_CONTINUE = -1, /* Internal: instruction completed, continue execution */
 };
 
 /*

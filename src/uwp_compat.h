@@ -44,6 +44,11 @@
 int uwp_compat_init(void);
 
 /*
+ * Override the rootfs path (called from FLinux_Init when a custom path is provided).
+ */
+void uwp_set_rootfs_path(const WCHAR *path);
+
+/*
  * Get the UWP-safe root filesystem path.
  * Returns the path to the rootfs directory within the app's local storage.
  * On non-UWP builds, returns the legacy hardcoded path.

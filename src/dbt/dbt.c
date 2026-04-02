@@ -64,17 +64,18 @@ static bool g_dbt_active = false;
 
 typedef int (*x86_syscall_fn)(int ebx, int ecx, int edx, int esi, int edi, int ebp, void *context);
 
-#define SYSCALL_COUNT_X86 359
 #define SYSCALL(name) extern int sys_##name(int, int, int, int, int, int, void*);
 #include <syscall/syscall_table_x86.h>
 #undef SYSCALL
 
 #define SYSCALL(name) (x86_syscall_fn)sys_##name,
-static x86_syscall_fn x86_syscall_table[SYSCALL_COUNT_X86] = {
+static x86_syscall_fn x86_syscall_table[] = {
 	(x86_syscall_fn)sys_unimplemented, /* syscall 0 (restart_syscall) */
 #include <syscall/syscall_table_x86.h>
 };
 #undef SYSCALL
+
+#define SYSCALL_COUNT_X86 (sizeof(x86_syscall_table) / sizeof(x86_syscall_table[0]))
 
 /* Forward declaration */
 extern void sys_unimplemented_imp(intptr_t id);

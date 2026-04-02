@@ -86,11 +86,12 @@ static void setup_rootfs_path(void)
 	}
 	else
 	{
-		/* Desktop mode: use legacy path or current directory */
+		/* Desktop mode: use current directory as rootfs base */
 		DWORD len = GetCurrentDirectoryW(UWP_MAX_PATH, g_rootfs_path);
 		if (len == 0)
 		{
-			wcscpy_s(g_rootfs_path, UWP_MAX_PATH, L"\\\\?\\C:\\Logs\\archlinux");
+			/* Last resort fallback to relative path */
+			wcscpy_s(g_rootfs_path, UWP_MAX_PATH, L".\\rootfs");
 		}
 	}
 }
@@ -142,6 +143,12 @@ int uwp_compat_init(void)
 		g_rootfs_path);
 
 	return 0;
+}
+
+void uwp_set_rootfs_path(const WCHAR *path)
+{
+	if (path)
+		wcscpy_s(g_rootfs_path, UWP_MAX_PATH, path);
 }
 
 WCHAR *uwp_get_rootfs_path(WCHAR *buf, int buf_size)

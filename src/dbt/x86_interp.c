@@ -1069,7 +1069,7 @@ static enum x86_exit_reason exec_insn(struct x86_cpu *cpu, struct x86_insn *insn
 	}
 
 	cpu->eip = next_eip;
-	return (enum x86_exit_reason)-1; /* Continue execution */
+	return X86_EXIT_CONTINUE;
 }
 
 /* ===== Main interpreter loop ===== */
@@ -1091,7 +1091,7 @@ enum x86_exit_reason x86_interp_step(struct x86_cpu *cpu)
 	cpu->insn_count = 1;
 	cpu->total_insn_count++;
 
-	if ((int)reason == -1)
+	if (reason == X86_EXIT_CONTINUE)
 		return X86_EXIT_SINGLE_STEP; /* Completed normally */
 
 	cpu->exit_reason = reason;
@@ -1120,7 +1120,7 @@ enum x86_exit_reason x86_interp_run(struct x86_cpu *cpu, uint64_t max_insns)
 		count++;
 		cpu->total_insn_count++;
 
-		if ((int)reason != -1)
+		if (reason != X86_EXIT_CONTINUE)
 		{
 			cpu->exit_reason = reason;
 			cpu->insn_count = count;
